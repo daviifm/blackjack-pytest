@@ -1,15 +1,22 @@
+from dataclasses import dataclass
+
+RANK_VALUES = {**{str(n): n for n in range(2, 11)}, "J": 10, "Q": 10, "K": 10, "A": 11}
+BLACKJACK = 21
+ACE_ADJUSTMENT = 10  # um ás passa de 11 para 1, para separar os ases (ou aces?  ou azes?) em soft e hard
+
+
+@dataclass(frozen=True)
 class Card:
-    def __init__(self, rank, suit):
-        self.rank = rank
-        self.suit = suit
+    rank: str
+    suit: str
 
     @property
     def value(self):
-        if self.rank == "A":
-            return 11
-        if self.rank in ("J", "Q", "K"):
-            return 10
-        return int(self.rank)
+        return RANK_VALUES[self.rank]
+
+    @property
+    def is_ace(self):
+        return self.rank == "A"
 
 
 class Hand:
@@ -21,17 +28,17 @@ class Hand:
 
     @property
     def score(self):
-        total = sum(c.value for c in self.cards)
-        aces = sum(1 for c in self.cards if c.rank == "A")
-        while total > 21 and aces:
-            total -= 10
-            aces -= 1
+        total = sum(card.value for card in self.cards)
+        soft_aces = sum(card.is_ace for card in self.cards)
+        while total > BLACKJACK and soft_aces:
+            total -= ACE_ADJUSTMENT
+            soft_aces -= 1
         return total
 
     @property
     def is_bust(self):
-        return self.score > 21
+        return self.score > BLACKJACK
 
     @property
     def is_blackjack(self):
-        return len(self.cards) == 2 and self.score == 21
+        return len(self.cards) == 2 and self.score == BLACKJACK

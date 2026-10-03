@@ -10,6 +10,12 @@ RANK_VALUES = {
 }
 BLACKJACK = 21
 ACE_ADJUSTMENT = 10  # um ás passa de 11 para 1, para separar os ases (ou aces?  ou azes?) em soft e hard
+INITIAL_CARDS = 2
+DEALER_STANDS_ON = 17
+HIDDEN_CARD = "??"
+HIDDEN_CARD_INDEX = 1  # a segunda carta da mesa fica oculta
+PLAYER = "player"
+DEALER = "dealer"
 
 
 @dataclass(frozen=True)
@@ -53,6 +59,13 @@ class Hand:
     def is_blackjack(self):
         return len(self.cards) == 2 and self.score == BLACKJACK
 
+    @property
+    def strength(self):
+        """Chave de comparação: estourar perde de tudo; blackjack desempata 21."""
+        if self.is_bust:
+            return (-1, False)
+        return (self.score, self.is_blackjack)
+
 
 class Deck:
     def __init__(self, cards=None, rng=None):
@@ -74,7 +87,10 @@ class Deck:
     def __len__(self):
         return len(self.cards)
 
+
 class Game:
+    """Uma rodada de blackjack: um jogador contra a mesa."""
+
     def __init__(self, deck=None):
         if deck is None:
             deck = Deck()
@@ -84,8 +100,9 @@ class Game:
         self.dealer_hand = Hand()
         self._player_stood = False
 
+    # --- ações do jogador ---
     def deal(self):
-        for _ in range(2):
+        for _ in range(INITIAL_CARDS):
             self.player_hand.add(self.deck.draw())
             self.dealer_hand.add(self.deck.draw())
 
@@ -96,39 +113,38 @@ class Game:
     def stand(self):
         self._require_player_turn()
         self._player_stood = True
-        while self.dealer_hand.score < 17:
-            self.dealer_hand.add(self.deck.draw())
+        self._dealer_play()
 
+    # --- estado da rodada ---
     @property
     def is_over(self):
         return self._player_stood or self.player_hand.is_bust
 
     def winner(self):
+        """PLAYER, DEALER ou None em caso de empate."""
         if not self.is_over:
             raise ValueError("a rodada ainda não terminou")
-        player, dealer = self.player_hand, self.dealer_hand
-        if player.is_bust:
-            return "dealer"
-        if dealer.is_bust:
-            return "player"
-        if player.score > dealer.score:
-            return "player"
-        if dealer.score > player.score:
-            return "dealer"
-        if player.is_blackjack and not dealer.is_blackjack:
-            return "player"
-        if dealer.is_blackjack and not player.is_blackjack:
-            return "dealer"
-        return None
+        player_strength = self.player_hand.strength
+        dealer_strength = self.dealer_hand.strength
+        if player_strength == dealer_strength:
+            return None
+        return PLAYER if player_strength > dealer_strength else DEALER
 
+    # --- visibilidade ---
     def table_view(self):
+        """A mesa vista pelo jogador: a segunda carta da mesa fica oculta até o fim."""
         dealer_cards = [str(card) for card in self.dealer_hand.cards]
-        if not self.is_over and len(dealer_cards) > 1:
-            dealer_cards[1] = "??"
+        if not self.is_over and len(dealer_cards) > HIDDEN_CARD_INDEX:
+            dealer_cards[HIDDEN_CARD_INDEX] = HIDDEN_CARD
         return {
-            "player": [str(card) for card in self.player_hand.cards],
-            "dealer": dealer_cards,
+            PLAYER: [str(card) for card in self.player_hand.cards],
+            DEALER: dealer_cards,
         }
+
+    # --- internos ---
+    def _dealer_play(self):
+        while self.dealer_hand.score < DEALER_STANDS_ON:
+            self.dealer_hand.add(self.deck.draw())
 
     def _require_player_turn(self):
         if self.is_over:

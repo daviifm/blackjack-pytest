@@ -73,3 +73,63 @@ class Deck:
 
     def __len__(self):
         return len(self.cards)
+
+class Game:
+    def __init__(self, deck=None):
+        if deck is None:
+            deck = Deck()
+            deck.shuffle()
+        self.deck = deck
+        self.player_hand = Hand()
+        self.dealer_hand = Hand()
+        self._player_stood = False
+
+    def deal(self):
+        for _ in range(2):
+            self.player_hand.add(self.deck.draw())
+            self.dealer_hand.add(self.deck.draw())
+
+    def hit(self):
+        self._require_player_turn()
+        self.player_hand.add(self.deck.draw())
+
+    def stand(self):
+        self._require_player_turn()
+        self._player_stood = True
+        while self.dealer_hand.score < 17:
+            self.dealer_hand.add(self.deck.draw())
+
+    @property
+    def is_over(self):
+        return self._player_stood or self.player_hand.is_bust
+
+    def winner(self):
+        if not self.is_over:
+            raise ValueError("a rodada ainda não terminou")
+        player, dealer = self.player_hand, self.dealer_hand
+        if player.is_bust:
+            return "dealer"
+        if dealer.is_bust:
+            return "player"
+        if player.score > dealer.score:
+            return "player"
+        if dealer.score > player.score:
+            return "dealer"
+        if player.is_blackjack and not dealer.is_blackjack:
+            return "player"
+        if dealer.is_blackjack and not player.is_blackjack:
+            return "dealer"
+        return None
+
+    def table_view(self):
+        dealer_cards = [str(card) for card in self.dealer_hand.cards]
+        if not self.is_over and len(dealer_cards) > 1:
+            dealer_cards[1] = "??"
+        return {
+            "player": [str(card) for card in self.player_hand.cards],
+            "dealer": dealer_cards,
+        }
+
+    def _require_player_turn(self):
+        if self.is_over:
+            raise ValueError("a rodada já terminou")

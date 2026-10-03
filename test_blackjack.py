@@ -1,5 +1,6 @@
 import pytest
-from blackjack import Card, Hand
+import random
+from blackjack import Card, Deck, Hand
 
 
 def hand(*ranks):
@@ -40,3 +41,33 @@ def test_mao_estourada():
 def test_blackjack_natural_so_com_duas_cartas():
     assert hand("A", "K").is_blackjack
     assert not hand("7", "7", "7").is_blackjack
+
+# Daqui em diante, começa o segundo teste
+
+def test_carta_como_texto():
+    assert str(Card("Q", "♥")) == "Q♥"
+
+
+def test_baralho_padrao_tem_52_cartas_unicas():
+    deck = Deck()
+    assert len(deck) == 52
+    assert len({str(c) for c in deck.cards}) == 52
+
+
+def test_comprar_remove_carta_do_topo():
+    deck = Deck(cards=[Card("A", "♠"), Card("2", "♠")])
+    assert str(deck.draw()) == "A♠"
+    assert len(deck) == 1
+
+
+def test_comprar_de_baralho_vazio_levanta_erro():
+    with pytest.raises(IndexError):
+        Deck(cards=[]).draw()
+
+
+def test_embaralhar_com_seed_e_reprodutivel():
+    a, b = Deck(rng=random.Random(42)), Deck(rng=random.Random(42))
+    a.shuffle()
+    b.shuffle()
+    assert [str(c) for c in a.cards] == [str(c) for c in b.cards]
+    assert [str(c) for c in a.cards] != [str(c) for c in Deck().cards]

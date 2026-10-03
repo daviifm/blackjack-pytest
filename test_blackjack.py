@@ -1,6 +1,6 @@
 import pytest
 import random
-from blackjack import Card, Deck, Hand
+from blackjack import Card, Deck, Game, Hand
 
 
 def hand(*ranks):
@@ -71,3 +71,116 @@ def test_embaralhar_com_seed_e_reprodutivel():
     b.shuffle()
     assert [str(c) for c in a.cards] == [str(c) for c in b.cards]
     assert [str(c) for c in a.cards] != [str(c) for c in Deck().cards]
+
+def make_cards(*codes):
+    return [Card(code[:-1], code[-1]) for code in codes]
+
+
+def new_game(*codes):
+    """Baralho empilhado: distribui jogador, mesa, jogador, mesa e depois as compras."""
+    game = Game(deck=Deck(cards=make_cards(*codes)))
+    game.deal()
+    return game
+
+
+def cards_of(hand):
+    return [str(c) for c in hand.cards]
+
+
+def test_distribuir_da_duas_cartas_para_jogador_e_mesa():
+    game = new_game("K♠", "10♣", "5♥", "8♦")
+    assert cards_of(game.player_hand) == ["K♠", "5♥"]
+    assert cards_of(game.dealer_hand) == ["10♣", "8♦"]
+
+
+def test_hit_adiciona_carta_ao_jogador():
+    game = new_game("K♠", "10♣", "5♥", "8♦", "2♣")
+    game.hit()
+    assert game.player_hand.score == 17
+
+
+def test_nao_pode_comprar_depois_de_parar():
+    game = new_game("K♠", "10♣", "5♥", "8♦", "2♣")
+    game.stand()
+    with pytest.raises(ValueError):
+        game.hit()
+
+
+def test_rodada_so_termina_quando_jogador_para():
+    game = new_game("K♠", "10♣", "5♥", "8♦")
+    assert not game.is_over
+    game.stand()
+    assert game.is_over
+
+
+def test_jogador_estoura_termina_rodada_e_mesa_nao_joga():
+    game = new_game("K♠", "5♣", "6♥", "6♦", "Q♣")
+    game.hit()  # 26
+    assert game.is_over
+    assert game.winner() == "dealer"
+    assert len(game.dealer_hand.cards) == 2
+
+
+def test_mesa_compra_ate_chegar_a_17():
+    game = new_game("K♠", "5♣", "9♥", "6♦", "4♠", "3♥")  # mesa: 11 -> 15 -> 18
+    game.stand()
+    assert game.dealer_hand.score == 18
+    assert len(game.dealer_hand.cards) == 4
+    assert game.winner() == "player"  # 19 x 18
+
+
+def test_mesa_para_em_17_e_vence_maior_pontuacao():
+    game = new_game("K♠", "10♣", "5♥", "7♦", "2♠")  # 15 x 17
+    game.stand()
+    assert len(game.deck) == 1  # a mesa não comprou
+    assert game.winner() == "dealer"
+
+
+def test_mesa_para_em_17_soft():
+    game = new_game("K♠", "A♣", "9♥", "6♦", "5♠")  # mesa: A+6 = 17
+    game.stand()
+    assert len(game.dealer_hand.cards) == 2
+    assert len(game.deck) == 1
+
+
+def test_mesa_estoura_jogador_vence():
+    game = new_game("K♠", "10♣", "5♥", "6♦", "Q♣")  # mesa: 16 + Q = 26
+    game.stand()
+    assert game.dealer_hand.is_bust
+    assert game.winner() == "player"
+
+
+def test_maior_pontuacao_do_jogador_vence():
+    game = new_game("K♠", "10♣", "9♥", "8♦")  # 19 x 18
+    game.stand()
+    assert game.winner() == "player"
+
+
+def test_empate_retorna_none():
+    game = new_game("K♠", "K♣", "9♥", "9♦")  # 19 x 19
+    game.stand()
+    assert game.winner() is None
+
+
+def test_blackjack_natural_vence_21_com_tres_cartas():
+    game = new_game("A♠", "7♣", "K♥", "7♦", "7♥")  # mesa: 14 + 7 = 21 (3 cartas)
+    game.stand()
+    assert game.dealer_hand.score == 21
+    assert game.winner() == "player"
+
+
+def test_vencedor_antes_do_fim_levanta_erro():
+    game = new_game("K♠", "10♣", "5♥", "8♦")
+    with pytest.raises(ValueError):
+        game.winner()
+
+
+def test_mesa_esconde_segunda_carta_da_mesa():
+    game = new_game("K♠", "10♣", "5♥", "8♦")
+    assert game.table_view() == {"player": ["K♠", "5♥"], "dealer": ["10♣", "??"]}
+
+
+def test_mesa_revela_tudo_quando_rodada_termina():
+    game = new_game("K♠", "10♣", "5♥", "8♦")
+    game.stand()
+    assert game.table_view() == {"player": ["K♠", "5♥"], "dealer": ["10♣", "8♦"]}

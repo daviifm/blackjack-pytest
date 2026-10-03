@@ -1,7 +1,13 @@
-from dataclasses import dataclass
 import random
+from collections import deque
+from dataclasses import dataclass
 
-RANK_VALUES = {**{str(n): n for n in range(2, 11)}, "J": 10, "Q": 10, "K": 10, "A": 11}
+RANKS = ("A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K")
+SUITS = ("♠", "♥", "♦", "♣")
+RANK_VALUES = {
+    **{str(n): n for n in range(2, 11)},
+    "J": 10, "Q": 10, "K": 10, "A": 11,
+}
 BLACKJACK = 21
 ACE_ADJUSTMENT = 10  # um ás passa de 11 para 1, para separar os ases (ou aces?  ou azes?) em soft e hard
 
@@ -47,24 +53,23 @@ class Hand:
     def is_blackjack(self):
         return len(self.cards) == 2 and self.score == BLACKJACK
 
+
 class Deck:
     def __init__(self, cards=None, rng=None):
         if cards is None:
-            cards = [
-                Card(rank, suit)
-                for suit in ["♠", "♥", "♦", "♣"]
-                for rank in ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-            ]
-        self.cards = list(cards)
+            cards = (Card(rank, suit) for suit in SUITS for rank in RANKS)
+        self.cards = deque(cards)
         self._rng = rng or random.Random()
 
     def shuffle(self):
-        self._rng.shuffle(self.cards)
+        shuffled = list(self.cards)
+        self._rng.shuffle(shuffled)
+        self.cards = deque(shuffled)
 
     def draw(self):
         if not self.cards:
             raise IndexError("baralho vazio")
-        return self.cards.pop(0)
+        return self.cards.popleft()
 
     def __len__(self):
         return len(self.cards)

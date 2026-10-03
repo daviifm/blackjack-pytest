@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import random
 
 RANK_VALUES = {**{str(n): n for n in range(2, 11)}, "J": 10, "Q": 10, "K": 10, "A": 11}
 BLACKJACK = 21
@@ -17,6 +18,9 @@ class Card:
     @property
     def is_ace(self):
         return self.rank == "A"
+
+    def __str__(self):
+        return f"{self.rank}{self.suit}"
 
 
 class Hand:
@@ -42,3 +46,25 @@ class Hand:
     @property
     def is_blackjack(self):
         return len(self.cards) == 2 and self.score == BLACKJACK
+
+class Deck:
+    def __init__(self, cards=None, rng=None):
+        if cards is None:
+            cards = [
+                Card(rank, suit)
+                for suit in ["♠", "♥", "♦", "♣"]
+                for rank in ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+            ]
+        self.cards = list(cards)
+        self._rng = rng or random.Random()
+
+    def shuffle(self):
+        self._rng.shuffle(self.cards)
+
+    def draw(self):
+        if not self.cards:
+            raise IndexError("baralho vazio")
+        return self.cards.pop(0)
+
+    def __len__(self):
+        return len(self.cards)

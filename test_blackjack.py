@@ -191,3 +191,19 @@ def test_nao_pode_agir_depois_de_natural():
         game.hit()
     with pytest.raises(ValueError):
         game.stand()
+
+def test_nao_pode_comprar_com_21():
+    game = new_game("K♠", "10♣", "5♥", "8♦", "6♣", "2♠")  # jogador: 15 -> 21
+    game.hit()
+    assert game.player_hand.score == 21
+    with pytest.raises(ValueError):
+        game.hit()
+    assert len(game.player_hand.cards) == 3  # nenhuma carta extra saiu
+    assert len(game.deck) == 1
+
+
+def test_pode_parar_com_21():
+    game = new_game("K♠", "10♣", "5♥", "8♦", "6♣")  # jogador: 15 -> 21, mesa: 18
+    game.hit()
+    game.stand()
+    assert game.winner() == "player"

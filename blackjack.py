@@ -56,8 +56,12 @@ class Hand:
         return self.score > BLACKJACK
 
     @property
+    def is_twenty_one(self):
+        return self.score == BLACKJACK
+
+    @property
     def is_blackjack(self):
-        return len(self.cards) == 2 and self.score == BLACKJACK
+        return len(self.cards) == 2 and self.is_twenty_one
 
     @property
     def strength(self):
@@ -108,7 +112,7 @@ class Game:
 
     def hit(self):
         self._require_player_turn()
-        if self.player_hand.score == BLACKJACK:
+        if self.player_hand.is_twenty_one:
             raise ValueError("jogador já tem 21")
         self.player_hand.add(self.deck.draw())
 
@@ -134,7 +138,7 @@ class Game:
 
     # --- visibilidade ---
     def table_view(self):
-        """A mesa vista pelo jogador: a segunda carta da mesa fica oculta até o fim."""
+        """A mesa vista pelo jogador: a 2ª carta da mesa fica oculta até o fim."""
         dealer_cards = [str(card) for card in self.dealer_hand.cards]
         if not self.is_over and len(dealer_cards) > HIDDEN_CARD_INDEX:
             dealer_cards[HIDDEN_CARD_INDEX] = HIDDEN_CARD
@@ -147,7 +151,7 @@ class Game:
     @property
     def _has_natural(self):
         return self.player_hand.is_blackjack or self.dealer_hand.is_blackjack
-    
+
     def _dealer_play(self):
         while self.dealer_hand.score < DEALER_STANDS_ON:
             self.dealer_hand.add(self.deck.draw())

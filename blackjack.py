@@ -108,6 +108,8 @@ class Game:
 
     def hit(self):
         self._require_player_turn()
+        if self.player_hand.score == BLACKJACK:
+            raise ValueError("jogador já tem 21")
         self.player_hand.add(self.deck.draw())
 
     def stand(self):

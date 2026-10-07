@@ -19,6 +19,6 @@ Jogo de blackjack (jogador vs. mesa) em Python, feito com TDD. Cada ciclo teve t
 - `table_view`: a segunda carta da mesa fica oculta (`??`) até o fim da rodada.
 - Vencedor: `"player"`, `"dealer"` ou `None` (empate). Estourar perde e blackjack natural vence um 21 de 3 ou mais cartas.
 
-Possíveis TDDs futuros: Um blackjack natural na distribuição não encerra a rodada automaticamente (o jogador ainda precisa dar stand()), e o jogador pode dar hit() mesmo com 21. Os dois casos poderiam adicionar mais ciclos de TDD.
+Possíveis TDDs futuros (não fiz por falta de tempo): Parar automaticamente ao chegar em 21, nova rodada (new_round()), baralho acabando no meio do jogo, soft 17 configurável e proteger deal() e as jogadas fora de ordem.
 
 

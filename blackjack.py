@@ -118,12 +118,7 @@ class Game:
     # --- estado da rodada ---
     @property
     def is_over(self):
-        return (
-            self._player_stood
-            or self.player_hand.is_bust
-            or self.player_hand.is_blackjack
-            or self.dealer_hand.is_blackjack
-        )
+        return self._player_stood or self.player_hand.is_bust or self._has_natural
 
     def winner(self):
         """PLAYER, DEALER ou None em caso de empate."""
@@ -147,6 +142,10 @@ class Game:
         }
 
     # --- internos ---
+    @property
+    def _has_natural(self):
+        return self.player_hand.is_blackjack or self.dealer_hand.is_blackjack
+    
     def _dealer_play(self):
         while self.dealer_hand.score < DEALER_STANDS_ON:
             self.dealer_hand.add(self.deck.draw())

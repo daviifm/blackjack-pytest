@@ -162,25 +162,32 @@ def test_empate_retorna_none():
     assert game.winner() is None
 
 
-def test_blackjack_natural_vence_21_com_tres_cartas():
-    game = new_game("A♠", "7♣", "K♥", "7♦", "7♥")  # mesa: 14 + 7 = 21 (3 cartas)
-    game.stand()
-    assert game.dealer_hand.score == 21
+def test_natural_vence_21_de_tres_cartas():
+    assert hand("A", "K").strength > hand("7", "7", "7").strength
+
+
+def test_natural_do_jogador_encerra_rodada_na_distribuicao():
+    game = new_game("A♠", "7♣", "K♥", "8♦")  # jogador: A+K = 21 (natural)
+    assert game.is_over
     assert game.winner() == "player"
+    assert game.table_view()["dealer"] == ["7♣", "8♦"]  # mesa revelada
 
 
-def test_vencedor_antes_do_fim_levanta_erro():
-    game = new_game("K♠", "10♣", "5♥", "8♦")
+def test_natural_da_mesa_encerra_rodada_na_distribuicao():
+    game = new_game("9♠", "A♣", "7♥", "K♦")  # mesa: A+K = 21 (natural)
+    assert game.is_over
+    assert game.winner() == "dealer"
+
+
+def test_naturais_dos_dois_lados_empatam():
+    game = new_game("A♠", "A♣", "K♥", "K♦")
+    assert game.is_over
+    assert game.winner() is None
+
+
+def test_nao_pode_agir_depois_de_natural():
+    game = new_game("A♠", "7♣", "K♥", "8♦", "2♣")
     with pytest.raises(ValueError):
-        game.winner()
-
-
-def test_mesa_esconde_segunda_carta_da_mesa():
-    game = new_game("K♠", "10♣", "5♥", "8♦")
-    assert game.table_view() == {"player": ["K♠", "5♥"], "dealer": ["10♣", "??"]}
-
-
-def test_mesa_revela_tudo_quando_rodada_termina():
-    game = new_game("K♠", "10♣", "5♥", "8♦")
-    game.stand()
-    assert game.table_view() == {"player": ["K♠", "5♥"], "dealer": ["10♣", "8♦"]}
+        game.hit()
+    with pytest.raises(ValueError):
+        game.stand()
